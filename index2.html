@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>E-Ink Chess Puzzles (Ultra Compatible)</title>
+    <style>
+        /* -------------------------------------------------------------
+           ULTRA-COMPATIBLE E-INK CSS (ES5 & Old WebKit Friendly)
+           - Uses standard float layouts instead of CSS Grid
+           - Crisp monochrome black & white contrast
+           ------------------------------------------------------------- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto 6px auto;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 4px;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        /* Status Header */
+        .info-panel {
+            border: 2px solid #000000;
+            padding: 4px;
+            margin-bottom: 8px;
+            background-color: #ffffff;
+        }
+
+        .puzzle-title {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-msg {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 4px;
+            min-height: 18px;
+            line-height: 18px;
+        }
+
+        .status-msg.success {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .status-msg.error {
+            border: 2px dashed #000000;
+        }
+
+        /* -------------------------------------------------------------
+           TABLE-BASED CHESS BOARD (100% Reliable on Legacy WebKit)
+           ------------------------------------------------------------- */
+        .board-table {
+            width: 320px;
+            height: 320px;
+            margin: 0 auto 10px auto;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 3px solid #000000;
+            background-color: #ffffff;
+        }
+
+        .board-table td {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            vertical-align: middle;
+            background-color: #ffffff;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .board-table td.dark-sq {
+            background-color: #c8c8c8; /* Solid e-ink gray */
+        }
+
+        .board-table td.selected-sq {
+            background-color: #777777 !important;
+            outline: 3px solid #000000;
+        }
+
+        /* Coordinate Label Cells */
+        .board-table th.coord-lbl {
+            width: 14px;
+            height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #000000;
+            background-color: #ffffff;
+            padding: 0;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Inline SVG Pieces inside Table Cells */
+        .board-table td svg {
+            width: 32px;
+            height: 32px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Controls Grid using Floats */
+        .controls {
+            width: 320px;
+            margin: 0 auto 10px auto;
+            clear: both;
+        }
+
+        .btn-col {
+            float: left;
+            width: 49%;
+            margin-right: 2%;
+            margin-bottom: 6px;
+        }
+
+        .btn-col.last {
+            margin-right: 0;
+        }
+
+        button {
+            width: 100%;
+            background-color: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+            padding: 8px 2px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        button.primary {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        /* Clearfix for Float Layout */
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        /* Collapsible instructions */
+        .instructions {
+            display: none;
+            text-align: left;
+            border: 2px solid #000000;
+            padding: 6px;
+            font-size: 11px;
+            margin-top: 6px;
+        }
+
+        .instructions.open {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>E-Ink Chess Puzzles</h1>
+        <div class="subtitle">Kobo E-Reader Edition</div>
+    </div>
+
+    <div class="container">
+        <!-- Info & Status -->
+        <div class="info-panel">
+            <div id="puzzle-title" class="puzzle-title">Puzzle 1</div>
+            <div id="puzzle-objective" style="font-weight:bold; font-size:12px; margin-top:2px;">White to Move</div>
+            <div id="status-msg" class="status-msg">Tap piece to select</div>
+        </div>
+
+        <!-- HTML Table Chess Board -->
+        <table id="board-table" class="board-table"></table>
+
+        <!-- Buttons Controls -->
+        <div class="controls clearfix">
+            <div class="btn-col"><button id="btn-prev">&larr; PREV</button></div>
+            <div class="btn-col last"><button id="btn-next">NEXT &rarr;</button></div>
+            <div class="btn-col"><button id="btn-reset">RESET</button></div>
+            <div class="btn-col last"><button id="btn-hint" class="primary">HINT</button></div>
+        </div>
+
+        <!-- Instructions Toggle -->
+        <div style="width: 320px; margin: 0 auto;">
+            <button id="btn-toggle-info" style="font-size: 11px; padding: 4px;">? HOW TO ADD MORE PUZZLES</button>
+            <div id="instructions" class="instructions">
+                <strong>Adding Puzzles:</strong>
+                <p>Edit this HTML file in Notepad and add lines to the <code>PUZZLE_DATABASE</code> array in the JavaScript section:</p>
+                <br>
+                <code>{ fen: "FEN_STRING", moves: ["e2e4", "e7e5"] }</code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* -------------------------------------------------------------
+           PURE INLINE SVG CHESS PIECE VECTORS
+           (Guarantees crisp rendering with dark strokes)
+           ------------------------------------------------------------- */
+        var SVG_PIECES = {
+            // White Pieces (White fill + thick black stroke)
+            'P': '<svg viewBox="0 0 45 45"><path d="M 22.5 9 A 4 4 0 1 1 22.5 17 A 4 4 0 1 1 22.5 9 Z M 15 32 L 30 32 L 27 17 L 18 17 Z M 12 37 L 33 37 L 33 32 L 12 32 Z" fill="#ffffff" stroke="#000000" stroke-width="3"/></svg>',
+            'N': '<svg viewBox="0 0 45 45"><path d="M 9.5 25.5 A 0.5 0.5 0 0 1 10 24 C 15 24 23 18 20 9 C 14 12 14 18 14 18 C 14 18 11 15 9 17 C 8 18 10 21 10 21 C 7 21 6 25 9.5 25.5 Z M 15 15.5 A 0.5 0.5 0 1 1 15 14.5 A 0.5 0.5 0 1 1 15 15.5 Z M 12 37 L 33 37 L 33 32 L 12 32 Z" fill="#ffffff" stroke="#000000" stroke-width="3"/></svg>',
+            'B': '<svg viewBox="0 0 45 45"><g fill="#ffffff" stroke="#000000" stroke-width="3"><circle cx="22.5" cy="8" r="2.5"/><path d="M 9 36 L 36 36 L 36 31 L 9 31 Z M 15 31 C 15 22 17 14 22.5 12 C 28 14 30 22 30 31 Z"/><line x1="18" y1="18" x2="27" y2="18"/></g></svg>',
+            'R': '<svg viewBox="0 0 45 45"><g fill="#ffffff" stroke="#000000" stroke-width="3"><path d="M 9 37 L 36 37 L 36 30 L 9 30 Z M 12 30 L 14 15 L 31 15 L 33 30 Z M 11 15 L 11 9 L 16 9 L 16 12 L 21 12 L 21 9 L 24 9 L 24 12 L 29 12 L 29 9 L 34 9 L 34 15 Z"/></g></svg>',
+            'Q': '<svg viewBox="0 0 45 45"><g fill="#ffffff" stroke="#000000" stroke-width="3"><circle cx="9" cy="12" r="2"/><circle cx="15.75" cy="9.5" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="29.25" cy="9.5" r="2"/><circle cx="36" cy="12" r="2"/><path d="M 9 26 L 36 26 L 38 14 L 30 21 L 22.5 11 L 15 21 L 7 14 Z M 9 37 L 36 37 L 36 31 L 9 31 Z"/></g></svg>',
+            'K': '<svg viewBox="0 0 45 45"><g fill="#ffffff" stroke="#000000" stroke-width="3"><line x1="22.5" y1="6" x2="22.5" y2="14"/><line x1="18.5" y1="9" x2="26.5" y2="9"/><path d="M 11.5 37 L 33.5 37 L 33.5 31 L 11.5 31 Z M 11.5 31 C 11.5 24 16 22 16 17 C 18.5 17 19.5 15 22.5 15 C 25.5 15 26.5 17 29 17 C 29 22 33.5 24 33.5 31 Z"/></g></svg>',
+
+            // Black Pieces (Solid black fill + white inner details)
+            'p': '<svg viewBox="0 0 45 45"><path d="M 22.5 9 A 4 4 0 1 1 22.5 17 A 4 4 0 1 1 22.5 9 Z M 15 32 L 30 32 L 27 17 L 18 17 Z M 12 37 L 33 37 L 33 32 L 12 32 Z" fill="#000000" stroke="#000000" stroke-width="3"/></svg>',
+            'n': '<svg viewBox="0 0 45 45"><path d="M 9.5 25.5 A 0.5 0.5 0 0 1 10 24 C 15 24 23 18 20 9 C 14 12 14 18 14 18 C 14 18 11 15 9 17 C 8 18 10 21 10 21 C 7 21 6 25 9.5 25.5 Z M 15 15.5 A 0.5 0.5 0 1 1 15 14.5 A 0.5 0.5 0 1 1 15 15.5 Z M 12 37 L 33 37 L 33 32 L 12 32 Z" fill="#000000" stroke="#000000" stroke-width="3"/><circle cx="15" cy="15" r="1.5" fill="#ffffff"/></svg>',
+            'b': '<svg viewBox="0 0 45 45"><g fill="#000000" stroke="#000000" stroke-width="3"><circle cx="22.5" cy="8" r="2.5"/><path d="M 9 36 L 36 36 L 36 31 L 9 31 Z M 15 31 C 15 22 17 14 22.5 12 C 28 14 30 22 30 31 Z"/><line x1="18" y1="18" x2="27" y2="18" stroke="#ffffff" stroke-width="2"/></g></svg>',
+            'r': '<svg viewBox="0 0 45 45"><g fill="#000000" stroke="#000000" stroke-width="3"><path d="M 9 37 L 36 37 L 36 30 L 9 30 Z M 12 30 L 14 15 L 31 15 L 33 30 Z M 11 15 L 11 9 L 16 9 L 16 12 L 21 12 L 21 9 L 24 9 L 24 12 L 29 12 L 29 9 L 34 9 L 34 15 Z"/></g></svg>',
+            'q': '<svg viewBox="0 0 45 45"><g fill="#000000" stroke="#000000" stroke-width="3"><circle cx="9" cy="12" r="2"/><circle cx="15.75" cy="9.5" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="29.25" cy="9.5" r="2"/><circle cx="36" cy="12" r="2"/><path d="M 9 26 L 36 26 L 38 14 L 30 21 L 22.5 11 L 15 21 L 7 14 Z M 9 37 L 36 37 L 36 31 L 9 31 Z"/></g></svg>',
+            'k': '<svg viewBox="0 0 45 45"><g fill="#000000" stroke="#000000" stroke-width="3"><line x1="22.5" y1="6" x2="22.5" y2="14" stroke="#ffffff" stroke-width="2"/><line x1="18.5" y1="9" x2="26.5" y2="9" stroke="#ffffff" stroke-width="2"/><path d="M 11.5 37 L 33.5 37 L 33.5 31 L 11.5 31 Z M 11.5 31 C 11.5 24 16 22 16 17 C 18.5 17 19.5 15 22.5 15 C 25.5 15 26.5 17 29 17 C 29 22 33.5 24 33.5 31 Z"/></g></svg>'
+        };
+
+        /* Built-in Puzzle Database */
+        var PUZZLE_DATABASE = [
+            {
+                id: 1,
+                desc: "White to Move - Mate in 1 (Back Rank)",
+                fen: "6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1",
+                moves: ["b1b8"]
+            },
+            {
+                id: 2,
+                desc: "White to Move - Mate in 1 (Scholar's Mate)",
+                fen: "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
+                moves: ["f3f7"]
+            },
+            {
+                id: 3,
+                desc: "White to Move - Mate in 1 (Smothered Mate)",
+                fen: "6pk/6pp/7N/8/8/8/8/6QK w - - 0 1",
+                moves: ["g1g7"]
+            },
+            {
+                id: 4,
+                desc: "White to Move - Mate in 2",
+                fen: "r1b2rk1/2q1bppp/p2pp3/1p2P3/3P1P2/2PB3R/P5PP/R1BQ2K1 w - - 0 1",
+                moves: ["d3h7", "g8h8", "h7g6"]
+            },
+            {
+                id: 5,
+                desc: "Black to Move - Mate in 1",
+                fen: "3R4/8/8/8/8/5k2/1r6/5K2 b - - 0 1",
+                moves: ["b2b1"]
+            },
+            {
+                id: 6,
+                desc: "White to Move - Mate in 1 (Queen Cover)",
+                fen: "k7/8/1K6/8/8/8/1R6/7Q w - - 0 1",
+                moves: ["h1h8"]
+            }
+        ];
+
+        /* ES5 Game Engine State Variables */
+        var currentPuzzleIdx = 0;
+        var boardState = [];
+        var selectedSquare = null;
+        var moveHistoryIndex = 0;
+        var isPuzzleSolved = false;
+        var activeTurn = 'w';
+
+        // DOM Element references
+        var boardTableEl = document.getElementById('board-table');
+        var statusMsgEl = document.getElementById('status-msg');
+        var puzzleTitleEl = document.getElementById('puzzle-title');
+        var puzzleObjEl = document.getElementById('puzzle-objective');
+        var btnPrev = document.getElementById('btn-prev');
+        var btnNext = document.getElementById('btn-next');
+        var btnReset = document.getElementById('btn-reset');
+        var btnHint = document.getElementById('btn-hint');
+        var btnToggleInfo = document.getElementById('btn-toggle-info');
+        var instructionsEl = document.getElementById('instructions');
+
+        /* Parse FEN string into 8x8 Board Array */
+        function loadFen(fen) {
+            boardState = [];
+            for (var i = 0; i < 8; i++) {
+                boardState.push([null, null, null, null, null, null, null, null]);
+            }
+            var parts = fen.split(' ');
+            var rows = parts[0].split('/');
+            activeTurn = parts[1] || 'w';
+
+            for (var r = 0; r < 8; r++) {
+                var c = 0;
+                var rowStr = rows[r];
+                for (var idx = 0; idx < rowStr.length; idx++) {
+                    var ch = rowStr.charAt(idx);
+                    if (!isNaN(parseInt(ch, 10))) {
+                        c += parseInt(ch, 10);
+                    } else {
+                        boardState[r][c] = ch;
+                        c++;
+                    }
+                }
+            }
+        }
+
+        /* Render Chessboard using HTML <table> (Ultra Compatible) */
+        function renderBoard() {
+            boardTableEl.innerHTML = '';
+
+            for (var r = 0; r < 8; r++) {
+                var tr = document.createElement('tr');
+
+                // Rank Coordinate Label (Left Side)
+                var thRank = document.createElement('th');
+                thRank.className = 'coord-lbl';
+                thRank.innerHTML = (8 - r);
+                tr.appendChild(thRank);
+
+                for (var c = 0; c < 8; c++) {
+                    var td = document.createElement('td');
+                    var isDark = (r + c) % 2 === 1;
+
+                    td.className = isDark ? 'dark-sq' : '';
+
+                    // Selection Highlight
+                    if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+                        td.className += ' selected-sq';
+                    }
+
+                    // Inject SVG Piece
+                    var piece = boardState[r][c];
+                    if (piece && SVG_PIECES[piece]) {
+                        var div = document.createElement('div');
+                        div.innerHTML = SVG_PIECES[piece];
+                        td.appendChild(div.firstChild);
+                    }
+
+                    // ES5 Closure Click Handler
+                    (function(row, col) {
+                        td.onclick = function() {
+                            handleSquareClick(row, col);
+                        };
+                    })(r, c);
+
+                    tr.appendChild(td);
+                }
+
+                boardTableEl.appendChild(tr);
+            }
+
+            // Bottom File Coordinate Labels (a - h)
+            var trFiles = document.createElement('tr');
+            var thCorner = document.createElement('th');
+            thCorner.className = 'coord-lbl';
+            trFiles.appendChild(thCorner);
+
+            for (var f = 0; f < 8; f++) {
+                var thFile = document.createElement('th');
+                thFile.className = 'coord-lbl';
+                thFile.innerHTML = String.fromCharCode(97 + f);
+                trFiles.appendChild(thFile);
+            }
+            boardTableEl.appendChild(trFiles);
+        }
+
+        /* Gameplay Logic */
+        function handleSquareClick(r, c) {
+            if (isPuzzleSolved) return;
+
+            var piece = boardState[r][c];
+            var isPieceWhite = piece && piece === piece.toUpperCase();
+            var isTurnWhite = activeTurn === 'w';
+
+            // Select own piece
+            if (piece && ((isTurnWhite && isPieceWhite) || (!isTurnWhite && !isPieceWhite))) {
+                selectedSquare = { r: r, c: c };
+                setStatus('Piece selected. Tap target square.');
+                renderBoard();
+                return;
+            }
+
+            // Target square click
+            if (selectedSquare) {
+                var fromSquare = coordsToUCI(selectedSquare.r, selectedSquare.c);
+                var toSquare = coordsToUCI(r, c);
+                var uciMove = fromSquare + toSquare;
+
+                // Auto Pawn Promotion
+                var movingPiece = boardState[selectedSquare.r][selectedSquare.c];
+                if ((movingPiece === 'P' && r === 0) || (movingPiece === 'p' && r === 7)) {
+                    uciMove += 'q';
+                }
+
+                verifyPlayerMove(uciMove, selectedSquare, { r: r, c: c });
+            }
+        }
+
+        function verifyPlayerMove(uciMove, from, to) {
+            var puzzle = PUZZLE_DATABASE[currentPuzzleIdx];
+            var expectedMove = puzzle.moves[moveHistoryIndex];
+
+            if (uciMove.toLowerCase() === expectedMove.toLowerCase()) {
+                applyMoveLocally(from, to, uciMove);
+                selectedSquare = null;
+                moveHistoryIndex++;
+
+                if (moveHistoryIndex >= puzzle.moves.length) {
+                    isPuzzleSolved = true;
+                    setStatus('CHECKMATE! Correct solution.', 'success');
+                } else {
+                    setStatus('Correct move! Opponent moving...', 'success');
+                    renderBoard();
+                    setTimeout(playOpponentMove, 400);
+                }
+            } else {
+                selectedSquare = null;
+                setStatus('Incorrect move! Try again.', 'error');
+                renderBoard();
+            }
+        }
+
+        function playOpponentMove() {
+            var puzzle = PUZZLE_DATABASE[currentPuzzleIdx];
+            if (moveHistoryIndex < puzzle.moves.length) {
+                var oppMoveUCI = puzzle.moves[moveHistoryIndex];
+                var from = uciToCoords(oppMoveUCI.substring(0, 2));
+                var to = uciToCoords(oppMoveUCI.substring(2, 4));
+                applyMoveLocally(from, to, oppMoveUCI);
+                moveHistoryIndex++;
+                setStatus('Your turn. Make the move!');
+                renderBoard();
+            }
+        }
+
+        function applyMoveLocally(from, to, uciMove) {
+            var piece = boardState[from.r][from.c];
+            if (uciMove.length === 5) {
+                var promoChar = uciMove.charAt(4);
+                piece = (piece === piece.toUpperCase()) ? promoChar.toUpperCase() : promoChar.toLowerCase();
+            }
+            boardState[to.r][to.c] = piece;
+            boardState[from.r][from.c] = null;
+        }
+
+        function coordsToUCI(r, c) {
+            var file = String.fromCharCode(97 + c);
+            var rank = 8 - r;
+            return file + rank;
+        }
+
+        function uciToCoords(uci) {
+            var c = uci.charCodeAt(0) - 97;
+            var r = 8 - parseInt(uci.charAt(1), 10);
+            return { r: r, c: c };
+        }
+
+        function loadPuzzle(index) {
+            if (index < 0 || index >= PUZZLE_DATABASE.length) return;
+            currentPuzzleIdx = index;
+            var puzzle = PUZZLE_DATABASE[currentPuzzleIdx];
+            
+            selectedSquare = null;
+            moveHistoryIndex = 0;
+            isPuzzleSolved = false;
+
+            loadFen(puzzle.fen);
+            puzzleTitleEl.innerHTML = 'Puzzle ' + (currentPuzzleIdx + 1) + ' of ' + PUZZLE_DATABASE.length;
+            puzzleObjEl.innerHTML = puzzle.desc;
+            setStatus(activeTurn === 'w' ? 'White to move' : 'Black to move');
+            renderBoard();
+        }
+
+        function setStatus(msg, type) {
+            statusMsgEl.innerHTML = msg;
+            statusMsgEl.className = 'status-msg' + (type ? ' ' + type : '');
+        }
+
+        // ES5 Event Handler Binding
+        btnPrev.onclick = function() {
+            if (currentPuzzleIdx > 0) loadPuzzle(currentPuzzleIdx - 1);
+        };
+
+        btnNext.onclick = function() {
+            if (currentPuzzleIdx < PUZZLE_DATABASE.length - 1) loadPuzzle(currentPuzzleIdx + 1);
+        };
+
+        btnReset.onclick = function() {
+            loadPuzzle(currentPuzzleIdx);
+        };
+
+        btnHint.onclick = function() {
+            if (isPuzzleSolved) return;
+            var puzzle = PUZZLE_DATABASE[currentPuzzleIdx];
+            var nextMove = puzzle.moves[moveHistoryIndex];
+            if (nextMove) {
+                var fromUCI = nextMove.substring(0, 2);
+                var toUCI = nextMove.substring(2, 4);
+                setStatus('Hint: Move ' + fromUCI.toUpperCase() + ' to ' + toUCI.toUpperCase(), 'error');
+            }
+        };
+
+        btnToggleInfo.onclick = function() {
+            if (instructionsEl.className.indexOf('open') !== -1) {
+                instructionsEl.className = 'instructions';
+            } else {
+                instructionsEl.className = 'instructions open';
+            }
+        };
+
+        // Initialize App
+        window.onload = function() {
+            loadPuzzle(0);
+        };
+    </script>
+</body>
+</html>
